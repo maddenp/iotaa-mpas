@@ -1,0 +1,30 @@
+package:
+  name: mpas
+  version: 0.0.1
+source:
+  path: ../src
+build:
+  include_recipe: false
+  number: 0
+requirements:
+  build:
+    - make >=4.3
+  host:
+    - pip
+  run:
+    - f90nml
+    - iotaa
+    - lxml
+    - requests
+    - ungrib
+test:
+  requires:
+    - black
+    - coverage
+    - docformatter
+    - isort
+    - mypy
+    - pylint
+    - pytest
+about:
+  license: OTHER
