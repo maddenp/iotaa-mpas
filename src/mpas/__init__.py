@@ -15,10 +15,6 @@ from iotaa import asset, external, ids, logcfg, run, task
 
 PathT = Union[Path, str]
 
-GFSURL = (
-    "https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.{yyyymmdd}/{hh}/atmos/"
-    "gfs.t{hh}z.pgrb2.0p25.f000"
-)
 NAMELIST_WPS = "/home/pmwork/conda/envs/ungrib/etc/wps/namelist.wps"
 UNGRIB = "/home/pmwork/conda/envs/ungrib/bin/ungrib"
 VTABLE_GFS = "/home/pmwork/conda/envs/ungrib/etc/wps/Vtable.GFS"
@@ -109,7 +105,10 @@ def _cycle(cycle: str) -> Tuple[str, str]:
 
 def _gfsurl(cycle: str) -> str:
     yyyymmdd, hh = _cycle(cycle)
-    return GFSURL.format(yyyymmdd=yyyymmdd, hh=hh)
+    return (
+        "https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.{yyyymmdd}/{hh}/atmos/"
+        "gfs.t{hh}z.pgrb2.0p25.f000"
+    ).format(yyyymmdd=yyyymmdd, hh=hh)
 
 
 def _rundir(rootdir: PathT, cycle: str) -> Path:
