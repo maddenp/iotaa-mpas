@@ -93,7 +93,7 @@ def gfs_upstream(cycle: str):
 @task
 def rundir(rootdir: PathT, cycle: str):
     path = _rundir(rootdir, cycle)
-    yield "Run directory %s" % rundir
+    yield "Run directory %s" % path
     yield asset(path, path.exists)
     yield None
     path.mkdir(parents=True)
