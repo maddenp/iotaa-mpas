@@ -6,7 +6,6 @@ import datetime as dt
 import logging
 from functools import partial
 
-# from importlib.resources import read_text
 from pathlib import Path
 from typing import Tuple, Union
 
@@ -116,6 +115,3 @@ def _gfsurl(cycle: str) -> str:
 def _rundir(rootdir: PathT, cycle: str) -> Path:
     yyyymmdd, hh = _cycle(cycle)
     return Path(rootdir) / yyyymmdd / hh
-
-
-# print(read_text("mpas.resources", "namelist.atmosphere"))
