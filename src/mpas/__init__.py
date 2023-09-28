@@ -4,20 +4,16 @@ A workflow for running MPAS.
 
 import datetime as dt
 import logging
+import os
 from functools import partial
-
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import f90nml
 import requests
-from iotaa import asset, external, ids, logcfg, run, task
+from iotaa import asset, external, logcfg, ref, run, task
 
 PathT = Union[Path, str]
-
-NAMELIST_WPS = "/home/pmwork/conda/envs/ungrib/etc/wps/namelist.wps"
-UNGRIB = "/home/pmwork/conda/envs/ungrib/bin/ungrib"
-VTABLE_GFS = "/home/pmwork/conda/envs/ungrib/etc/wps/Vtable.GFS"
 
 logcfg()
 
@@ -43,7 +39,7 @@ def gribfile_aaa(rootdir: PathT, cycle: str):
     yield asset(path, path.exists)
     g = gfs_local(rootdir, cycle)
     yield g
-    path.symlink_to(Path(ids(g)).name)
+    path.symlink_to(Path(ref(g)).name)
 
 
 @task
@@ -52,7 +48,7 @@ def vtable(rootdir: PathT, cycle: str):
     yield "Variable table file %s" % path
     yield asset(path, path.exists)
     yield rundir(rootdir, cycle)
-    path.symlink_to(Path(VTABLE_GFS))
+    path.symlink_to(Path(_wpsfile("Vtable.GFS")))
 
 
 @task
@@ -62,7 +58,7 @@ def namelist_wps(rootdir: PathT, cycle: str):
     yield asset(path, path.exists)
     yield rundir(rootdir, cycle)
     timestr = dt.datetime.fromisoformat(cycle).strftime("%Y-%m-%d_%H:00:00")
-    f90nml.patch(NAMELIST_WPS, {"share": {"start_date": timestr, "end_date": timestr}}, path)
+    f90nml.patch(_wpsfile(path.name), {"share": {"start_date": timestr, "end_date": timestr}}, path)
 
 
 @task
@@ -98,6 +94,25 @@ def rundir(rootdir: PathT, cycle: str):
 # Helpers
 
 
+def _condarun(
+    conda_path: str,
+    conda_env: str,
+    taskname: str,
+    cmd: str,
+    cwd: Optional[Union[Path, str]] = None,
+    env: Optional[Dict[str, str]] = None,
+    log: Optional[bool] = False,
+) -> None:
+    cmd = " && ".join(
+        [
+            'eval "$(%s/bin/conda shell.bash hook)"' % conda_path,
+            "conda activate %s" % conda_env,
+            cmd,
+        ]
+    )
+    run(taskname, cmd, cwd, env, log)
+
+
 def _cycle(cycle: str) -> Tuple[str, str]:
     c = dt.datetime.fromisoformat(cycle)
     return c.strftime("%Y%m%d"), c.strftime("%H")
@@ -114,3 +129,7 @@ def _gfsurl(cycle: str) -> str:
 def _rundir(rootdir: PathT, cycle: str) -> Path:
     yyyymmdd, hh = _cycle(cycle)
     return Path(rootdir) / yyyymmdd / hh
+
+
+def _wpsfile(fn: str) -> Path:
+    return Path(os.environ["WPSFILES"]) / fn
