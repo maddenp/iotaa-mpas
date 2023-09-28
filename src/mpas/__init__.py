@@ -94,25 +94,6 @@ def rundir(rootdir: PathT, cycle: str):
 # Helpers
 
 
-def _condarun(
-    conda_path: str,
-    conda_env: str,
-    taskname: str,
-    cmd: str,
-    cwd: Optional[Union[Path, str]] = None,
-    env: Optional[Dict[str, str]] = None,
-    log: Optional[bool] = False,
-) -> None:
-    cmd = " && ".join(
-        [
-            'eval "$(%s/bin/conda shell.bash hook)"' % conda_path,
-            "conda activate %s" % conda_env,
-            cmd,
-        ]
-    )
-    run(taskname, cmd, cwd, env, log)
-
-
 def _cycle(cycle: str) -> Tuple[str, str]:
     c = dt.datetime.fromisoformat(cycle)
     return c.strftime("%Y%m%d"), c.strftime("%H")
