@@ -4,25 +4,16 @@ A workflow for running MPAS.
 
 import datetime as dt
 import logging
+import os
 from functools import partial
-
-# from importlib.resources import read_text
 from pathlib import Path
 from typing import Tuple, Union
 
 import f90nml
 import requests
-from iotaa import asset, external, ids, logcfg, run, task
+from iotaa import asset, external, logcfg, ref, run, task
 
 PathT = Union[Path, str]
-
-GFSURL = (
-    "https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.{yyyymmdd}/{hh}/atmos/"
-    "gfs.t{hh}z.pgrb2.0p25.f000"
-)
-NAMELIST_WPS = "/home/pmwork/conda/envs/ungrib/etc/wps/namelist.wps"
-UNGRIB = "/home/pmwork/conda/envs/ungrib/bin/ungrib"
-VTABLE_GFS = "/home/pmwork/conda/envs/ungrib/etc/wps/Vtable.GFS"
 
 logcfg()
 
@@ -48,7 +39,7 @@ def gribfile_aaa(rootdir: PathT, cycle: str):
     yield asset(path, path.exists)
     g = gfs_local(rootdir, cycle)
     yield g
-    path.symlink_to(Path(ids(g)).name)
+    path.symlink_to(Path(ref(g)).name)
 
 
 @task
@@ -57,7 +48,7 @@ def vtable(rootdir: PathT, cycle: str):
     yield "Variable table file %s" % path
     yield asset(path, path.exists)
     yield rundir(rootdir, cycle)
-    path.symlink_to(Path(VTABLE_GFS))
+    path.symlink_to(Path(_wpsfile("Vtable.GFS")))
 
 
 @task
@@ -67,7 +58,7 @@ def namelist_wps(rootdir: PathT, cycle: str):
     yield asset(path, path.exists)
     yield rundir(rootdir, cycle)
     timestr = dt.datetime.fromisoformat(cycle).strftime("%Y-%m-%d_%H:00:00")
-    f90nml.patch(NAMELIST_WPS, {"share": {"start_date": timestr, "end_date": timestr}}, path)
+    f90nml.patch(_wpsfile(path.name), {"share": {"start_date": timestr, "end_date": timestr}}, path)
 
 
 @task
@@ -94,7 +85,7 @@ def gfs_upstream(cycle: str):
 @task
 def rundir(rootdir: PathT, cycle: str):
     path = _rundir(rootdir, cycle)
-    yield "Run directory %s" % rundir
+    yield "Run directory %s" % path
     yield asset(path, path.exists)
     yield None
     path.mkdir(parents=True)
@@ -110,7 +101,10 @@ def _cycle(cycle: str) -> Tuple[str, str]:
 
 def _gfsurl(cycle: str) -> str:
     yyyymmdd, hh = _cycle(cycle)
-    return GFSURL.format(yyyymmdd=yyyymmdd, hh=hh)
+    return (
+        "https://ftpprd.ncep.noaa.gov/data/nccf/com/gfs/prod/gfs.{yyyymmdd}/{hh}/atmos/"
+        "gfs.t{hh}z.pgrb2.0p25.f000"
+    ).format(yyyymmdd=yyyymmdd, hh=hh)
 
 
 def _rundir(rootdir: PathT, cycle: str) -> Path:
@@ -118,4 +112,5 @@ def _rundir(rootdir: PathT, cycle: str) -> Path:
     return Path(rootdir) / yyyymmdd / hh
 
 
-# print(read_text("mpas.resources", "namelist.atmosphere"))
+def _wpsfile(fn: str) -> Path:
+    return Path(os.environ["WPSFILES"]) / fn

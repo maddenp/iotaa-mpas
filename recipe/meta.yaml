@@ -13,7 +13,7 @@ requirements:
     - pip
   run:
     - f90nml
-    - iotaa
+    - iotaa =0.3.0
     - lxml
     - requests
     - ungrib
