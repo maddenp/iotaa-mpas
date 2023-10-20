@@ -11,7 +11,7 @@ from typing import Tuple, Union
 
 import f90nml
 import requests
-from iotaa import asset, external, logcfg, ref, run, task
+from iotaa import asset, external, logcfg, refs, run, task
 
 PathT = Union[Path, str]
 
@@ -39,7 +39,7 @@ def gribfile_aaa(rootdir: PathT, cycle: str):
     yield asset(path, path.exists)
     g = gfs_local(rootdir, cycle)
     yield g
-    path.symlink_to(Path(ref(g)).name)
+    path.symlink_to(Path(refs(g)).name)
 
 
 @task
@@ -79,7 +79,7 @@ def gfs_local(rootdir: PathT, cycle: str):
 def gfs_upstream(cycle: str):
     url = _gfsurl(cycle)
     yield "Upstream GFS file %s" % url
-    yield asset(url, partial(requests.head, url))
+    yield asset(url, lambda: requests.head(url).status_code == 200)
 
 
 @task
